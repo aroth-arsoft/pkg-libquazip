@@ -1,0 +1,14 @@
+/.pc/
+/doc/
+/quazip/
+/qztest/
+/CMakeLists.txt
+/COPYING
+/Doxyfile
+/FindQuaZip.cmake
+/NEWS.txt
+/README.txt
+/includes.pri
+/quazip.pri
+/quazip.pro
+/quazip.sln
