@@ -1,0 +1,71 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+# This code is released under the BSD-3 Clause
+# Created by Eric Maeker, 2012 - 2014
+# Modified by Stefan Ahlers, 2016
+
+# Uncomment this to turn on verbose mode.
+#export DH_VERBOSE=1
+
+export DEB_BUILD_MAINT_OPTIONS = hardening=+bindnow
+
+# Enable multiarch builds & prepare qmake vars
+DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
+QT4_PATH = build/qt4
+QT5_PATH = build/qt5
+
+# This has to be exported to make some magic below work.
+
+%:
+	dh $@ --parallel #--with migrations
+
+override_dh_auto_configure:
+	mkdir -p $(QT4_PATH) $(QT5_PATH)
+
+	# Qt4 builds - CMake (dynamic and static)
+	QT_SELECT=qt4 \
+	dh_auto_configure -B$(QT4_PATH) -- -DBUILD_WITH_QT4=ON \
+	-DLIB_SUFFIX=/$(DEB_HOST_MULTIARCH) \
+	-DCMAKE_POSITION_INDEPENDENT_CODE=ON 
+
+	# Qt5 builds - CMake (dynamic and static)
+	QT_SELECT=qt5 \
+	dh_auto_configure -B$(QT5_PATH) -- -DBUILD_WITH_QT4=OFF \
+	-DLIB_SUFFIX=/$(DEB_HOST_MULTIARCH) \
+	-DCMAKE_POSITION_INDEPENDENT_CODE=ON
+
+	cp NEWS.txt NEWS
+
+override_dh_auto_build:
+	# Qt4 builds - make (dynamic and static)
+	QT_SELECT=qt4 dh_auto_build -B$(QT4_PATH)
+
+	# Qt5 builds - make (dynamic and static)
+	QT_SELECT=qt5 dh_auto_build -B$(QT5_PATH)
+
+override_dh_auto_clean:
+	dh_auto_clean -B$(QT4_PATH)
+	dh_auto_clean -B$(QT5_PATH)
+	rm -Rf NEWS
+
+override_dh_auto_install:
+	# Install Qt4 packages
+	dh_auto_install -B$(QT4_PATH) 
+
+	# Install Qt5 packages
+	dh_auto_install -B$(QT5_PATH) 
+
+override_dh_installchangelogs:
+	dh_installchangelogs -plibquazip1 NEWS upstream
+	dh_installchangelogs -plibquazip1-dev NEWS upstream
+	dh_installchangelogs -plibquazip5-1 NEWS upstream
+	dh_installchangelogs -plibquazip5-dev NEWS upstream
+	dh_installchangelogs
+
+override_dh_installdocs:
+	dh_installdocs
+	find debian -name "*.md5" -delete
+
+override_dh_install:
+	dh_install --list-missing
+
